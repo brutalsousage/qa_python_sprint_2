@@ -1,16 +1,10 @@
-import pytest  # <-- Обязательно!
-from main import BooksCollector
+import pytest
 
 class TestBooksCollector:
-    @pytest.fixture
-    def collector(self):
-        return BooksCollector()
-
     def test_init(self, collector):
         assert collector.books_genre == {}
         assert collector.favorites == []
         assert collector.genre == ["Фантастика", "Ужасы", "Детективы", "Мультфильмы", "Комедии"]
-        # Изменено: теперь проверяем как список (на основе ошибки). Если в классе это словарь — верните оригинал!
         assert collector.genre_age_rating == ['Ужасы', 'Детективы']
 
     @pytest.mark.parametrize("name, expected", [
@@ -22,23 +16,38 @@ class TestBooksCollector:
         collector.add_new_book(name)
         assert (name in collector.books_genre) == expected
 
-    @pytest.mark.parametrize("name, genre, expected_genre", [
+    @pytest.mark.parametrize("name, genre, expected", [
         ("Гарри Поттер", "Фантастика", "Фантастика"),
         ("Гарри Поттер", "Недопустимый жанр", ""),
-        ("Книга без жанра", "", ""),
     ])
-    def test_set_and_get_book_genre(self, collector, name, genre, expected_genre):
+    def test_set_book_genre(self, collector, name, genre, expected):
         collector.add_new_book(name)
         collector.set_book_genre(name, genre)
-        assert collector.get_book_genre(name) == expected_genre
+        assert collector.books_genre[name] == expected
+
+    @pytest.mark.parametrize("name, genre, expected", [
+        ("Гарри Поттер", "Фантастика", "Фантастика"),
+        ("Книга без жанра", "", ""),
+        ("Неизвестная книга", None, None),
+    ])
+    def test_get_book_genre(self, collector, name, genre, expected):
+        if name in ["Гарри Поттер", "Книга без жанра"]:
+            collector.add_new_book(name)
+            collector.set_book_genre(name, genre)
+        assert collector.get_book_genre(name) == expected
 
     @pytest.mark.parametrize("genre, expected_books", [
-        ("Фантастика", ["Гарри Поттер"]),
-        ("Комедии", []),
+        ("Фантастика", ["Гарри Поттер", "Властелин колец"]),
+        ("Комедии", ["Комедийной книга"]),
+        ("Недопустимый жанр", []),
     ])
     def test_get_books_with_specific_genre(self, collector, genre, expected_books):
         collector.add_new_book("Гарри Поттер")
         collector.set_book_genre("Гарри Поттер", "Фантастика")
+        collector.add_new_book("Властелин колец")
+        collector.set_book_genre("Властелин колец", "Фантастика")
+        collector.add_new_book("Комедийной книга")
+        collector.set_book_genre("Комедийной книга", "Комедии")
         assert collector.get_books_with_specific_genre(genre) == expected_books
 
     def test_get_books_genre(self, collector):
@@ -81,5 +90,4 @@ class TestBooksCollector:
     def test_add_new_book_add_two_books(self, collector):
         collector.add_new_book("Гарри Поттер")
         collector.add_new_book("Властелин колец")
-        # Исправлено: books_rating -> books_genre
         assert len(collector.books_genre) == 2
